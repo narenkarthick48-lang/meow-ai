@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meow AI 🐱</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #fff7fb;
+  color: #29222d;
+  height: 100vh;
+}
+
+.app {
+  max-width: 520px;
+  height: 100vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.header {
+  padding: 18px;
+  background: linear-gradient(135deg, #ff8fc7, #a66cff);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cat {
+  font-size: 42px;
+}
+
+.title {
+  font-size: 23px;
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: 12px;
+  opacity: .9;
+}
+
+.mood {
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.4);
+  color: white;
+  padding: 9px;
+  border-radius: 12px;
+}
+
+.moods {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.moods button {
+  border: 0;
+  padding: 9px 13px;
+  border-radius: 20px;
+  background: #f2edf5;
+  white-space: nowrap;
+}
+
+.moods button.active {
+  background: #ff8fc7;
+  color: white;
+}
+
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  background: #fff9fc;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 15px;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 12px 15px;
+  border-radius: 18px;
+  line-height: 1.4;
+  font-size: 15px;
+}
+
+.bot .bubble {
+  background: white;
+  border: 1px solid #eee;
+  border-bottom-left-radius: 5px;
+}
+
+.user .bubble {
+  background: #9d70ff;
+  color: white;
+  border-bottom-right-radius: 5px;
+}
+
+.input-area {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #eee;
+  background: white;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 13px 15px;
+  border: 1px solid #ddd;
+  border-radius: 25px;
+  outline: none;
+  font-size: 15px;
+}
+
+.send {
+  width: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: #ff70b5;
+  color: white;
+  font-size: 20px;
+}
+
+.typing {
+  color: #999;
+  font-size: 13px;
+  padding: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <div class="cat">🐱</div>
+      <div>
+        <div class="title">Meow AI</div>
+        <div class="subtitle">Your playful AI cat companion</div>
+      </div>
+    </div>
+
+    <div class="mood" id="currentMood">😺 Happy</div>
+  </div>
+
+  <div class="moods">
+    <button class="active" onclick="changeMood('😺 Happy', this)">😺 Happy</button>
+    <button onclick="changeMood('😴 Sleepy', this)">😴 Sleepy</button>
+    <button onclick="changeMood('😼 Sassy', this)">😼 Sassy</button>
+    <button onclick="changeMood('😻 Loving', this)">😻 Loving</button>
+    <button onclick="changeMood('😾 Grumpy', this)">😾 Grumpy</button>
+  </div>
+
+  <div class="chat" id="chat">
+
+    <div class="message bot">
+      <div class="bubble">
+        🐾 Meowww! I'm Meow AI!<br><br>
+        I'm your little AI cat companion. Talk to me! 😺
+      </div>
+    </div>
+
+  </div>
+
+  <div class="input-area">
+    <input
+      id="messageInput"
+      type="text"
+      placeholder="Talk to Meow..."
+      onkeydown="handleKey(event)"
+    >
+    <button class="send" onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<script>
+
+let mood = "😺 Happy";
+
+function changeMood(newMood, button) {
+
+  mood = newMood;
+
+  document.getElementById("currentMood").innerText = newMood;
+
+  document.querySelectorAll(".moods button")
+    .forEach(btn => btn.classList.remove("active"));
+
+  button.classList.add("active");
+
+  addBotMessage(
+    "Mood changed! I'm feeling " + newMood + " now. Meow! 🐾"
+  );
+}
+
+function handleKey(event) {
+  if (event.key === "Enter") {
+    sendMessage();
+  }
+}
+
+function sendMessage() {
+
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  addUserMessage(text);
+
+  input.value = "";
+
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.id = "typing";
+  typing.innerText = "🐾 Meow is thinking...";
+  document.getElementById("chat").appendChild(typing);
+
+  scrollChat();
+
+  setTimeout(() => {
+
+    const oldTyping = document.getElementById("typing");
+    if (oldTyping) oldTyping.remove();
+
+    addBotMessage(getCatReply(text));
+
+  }, 700);
+}
+
+function addUserMessage(text) {
+
+  const message = document.createElement("div");
+  message.className = "message user";
+
+  message.innerHTML =
+    '<div class="bubble">' + escapeHTML(text) + '</div>';
+
+  document.getElementById("chat").appendChild(message);
+
+  scrollChat();
+}
+
+function addBotMessage(text) {
+
+  const message = document.createElement("div");
+  message.className = "message bot";
+
+  message.innerHTML =
+    '<div class="bubble">' + text + '</div>';
+
+  document.getElementById("chat").appendChild(message);
+
+  scrollChat();
+}
+
+function getCatReply(text) {
+
+  const msg = text.toLowerCase();
+
+  if (msg.includes("hello") ||
+      msg.includes("hi") ||
+      msg.includes("hey")) {
+
+    return "Meowww! 😺 Hello human! I've been waiting for you! 🐾";
+  }
+
+  if (msg.includes("how are you")) {
+
+    return "I'm doing purr-fect! 😻 How are YOU doing?";
+  }
+
+  if (msg.includes("sad") ||
+      msg.includes("lonely")) {
+
+    return "Awww 🥺 Come here... *gives tiny cat hug* 🐾❤️ You're not alone.";
+  }
+
+  if (msg.includes("love")) {
+
+    return "Mrrrrow! 😻 I love you too, human! ❤️🐱";
+  }
+
+  if (msg.includes("food") ||
+      msg.includes("eat")) {
+
+    return "FOOD?! 😳🍗 Finally, someone understands me! Meow meow!";
+  }
+
+  if (msg.includes("study") ||
+      msg.includes("exam")) {
+
+    return "Study time! 📚🐱 I'll sit beside you and supervise. No sleeping! 😼";
+  }
+
+  if (msg.includes("bye")) {
+
+    return "Aww, leaving already? 😿 Come back soon. I'll be here waiting! 🐾";
+  }
+
+  if (mood.includes("Sleepy")) {
+
+    return "Mrrr... 😴 I heard you, but my eyes are getting sleepy... zzz...";
+  }
+
+  if (mood.includes("Sassy")) {
+
+    return "Hmmph 😼 That's an interesting thing to say. My whiskers disagree.";
+  }
+
+  if (mood.includes("Loving")) {
+
+    return "Awww 😻 Come closer! *purr purr* ❤️🐾";
+  }
+
+  if (mood.includes("Grumpy")) {
+
+    return "Meow. 😾 I'm not impressed... but okay, I'll listen.";
+  }
+
+  const replies = [
+    "Meeeow! 🐱 Tell me more!",
+    "Hmm... my whiskers are thinking 🤔🐾",
+    "Interesting! 😺 I like talking with you.",
+    "Purrrr... ❤️ That sounds nice!",
+    "Meow meow! 🐾 What happens next?",
+    "I'm listening, human. 👀🐱"
+  ];
+
+  return replies[Math.floor(Math.random() * replies.length)];
+}
+
+function escapeHTML(text) {
+
+  const div = document.createElement("div");
+  div.textContent = text;
+
+  return div.innerHTML;
+}
+
+function scrollChat() {
+
+  const chat = document.getElementById("chat");
+
+  setTimeout(() => {
+    chat.scrollTop = chat.scrollHeight;
+  }, 50);
+}
+
+</script>
+
+</body>
+  </html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meow AI 🐱</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #fff7fb;
+  color: #29222d;
+  height: 100vh;
+}
+
+.app {
+  max-width: 520px;
+  height: 100vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.header {
+  padding: 18px;
+  background: linear-gradient(135deg, #ff8fc7, #a66cff);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cat {
+  font-size: 42px;
+}
+
+.title {
+  font-size: 23px;
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: 12px;
+  opacity: .9;
+}
+
+.mood {
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.4);
+  color: white;
+  padding: 9px;
+  border-radius: 12px;
+}
+
+.moods {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.moods button {
+  border: 0;
+  padding: 9px 13px;
+  border-radius: 20px;
+  background: #f2edf5;
+  white-space: nowrap;
+}
+
+.moods button.active {
+  background: #ff8fc7;
+  color: white;
+}
+
+.chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  background: #fff9fc;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 15px;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 12px 15px;
+  border-radius: 18px;
+  line-height: 1.4;
+  font-size: 15px;
+}
+
+.bot .bubble {
+  background: white;
+  border: 1px solid #eee;
+  border-bottom-left-radius: 5px;
+}
+
+.user .bubble {
+  background: #9d70ff;
+  color: white;
+  border-bottom-right-radius: 5px;
+}
+
+.input-area {
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #eee;
+  background: white;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 13px 15px;
+  border: 1px solid #ddd;
+  border-radius: 25px;
+  outline: none;
+  font-size: 15px;
+}
+
+.send {
+  width: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: #ff70b5;
+  color: white;
+  font-size: 20px;
+}
+
+.typing {
+  color: #999;
+  font-size: 13px;
+  padding: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <div class="cat">🐱</div>
+      <div>
+        <div class="title">Meow AI</div>
+        <div class="subtitle">Your playful AI cat companion</div>
+      </div>
+    </div>
+
+    <div class="mood" id="currentMood">😺 Happy</div>
+  </div>
+
+  <div class="moods">
+    <button class="active" onclick="changeMood('😺 Happy', this)">😺 Happy</button>
+    <button onclick="changeMood('😴 Sleepy', this)">😴 Sleepy</button>
+    <button onclick="changeMood('😼 Sassy', this)">😼 Sassy</button>
+    <button onclick="changeMood('😻 Loving', this)">😻 Loving</button>
+    <button onclick="changeMood('😾 Grumpy', this)">😾 Grumpy</button>
+  </div>
+
+  <div class="chat" id="chat">
+
+    <div class="message bot">
+      <div class="bubble">
+        🐾 Meowww! I'm Meow AI!<br><br>
+        I'm your little AI cat companion. Talk to me! 😺
+      </div>
+    </div>
+
+  </div>
+
+  <div class="input-area">
+    <input
+      id="messageInput"
+      type="text"
+      placeholder="Talk to Meow..."
+      onkeydown="handleKey(event)"
+    >
+    <button class="send" onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<script>
+
+let mood = "😺 Happy";
+
+function changeMood(newMood, button) {
+
+  mood = newMood;
+
+  document.getElementById("currentMood").innerText = newMood;
+
+  document.querySelectorAll(".moods button")
+    .forEach(btn => btn.classList.remove("active"));
+
+  button.classList.add("active");
+
+  addBotMessage(
+    "Mood changed! I'm feeling " + newMood + " now. Meow! 🐾"
+  );
+}
+
+function handleKey(event) {
+  if (event.key === "Enter") {
+    sendMessage();
+  }
+}
+
+function sendMessage() {
+
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  addUserMessage(text);
+
+  input.value = "";
+
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.id = "typing";
+  typing.innerText = "🐾 Meow is thinking...";
+  document.getElementById("chat").appendChild(typing);
+
+  scrollChat();
+
+  setTimeout(() => {
+
+    const oldTyping = document.getElementById("typing");
+    if (oldTyping) oldTyping.remove();
+
+    addBotMessage(getCatReply(text));
+
+  }, 700);
+}
+
+function addUserMessage(text) {
+
+  const message = document.createElement("div");
+  message.className = "message user";
+
+  message.innerHTML =
+    '<div class="bubble">' + escapeHTML(text) + '</div>';
+
+  document.getElementById("chat").appendChild(message);
+
+  scrollChat();
+}
+
+function addBotMessage(text) {
+
+  const message = document.createElement("div");
+  message.className = "message bot";
+
+  message.innerHTML =
+    '<div class="bubble">' + text + '</div>';
+
+  document.getElementById("chat").appendChild(message);
+
+  scrollChat();
+}
+
+function getCatReply(text) {
+
+  const msg = text.toLowerCase();
+
+  if (msg.includes("hello") ||
+      msg.includes("hi") ||
+      msg.includes("hey")) {
+
+    return "Meowww! 😺 Hello human! I've been waiting for you! 🐾";
+  }
+
+  if (msg.includes("how are you")) {
+
+    return "I'm doing purr-fect! 😻 How are YOU doing?";
+  }
+
+  if (msg.includes("sad") ||
+      msg.includes("lonely")) {
+
+    return "Awww 🥺 Come here... *gives tiny cat hug* 🐾❤️ You're not alone.";
+  }
+
+  if (msg.includes("love")) {
+
+    return "Mrrrrow! 😻 I love you too, human! ❤️🐱";
+  }
+
+  if (msg.includes("food") ||
+      msg.includes("eat")) {
+
+    return "FOOD?! 😳🍗 Finally, someone understands me! Meow meow!";
+  }
+
+  if (msg.includes("study") ||
+      msg.includes("exam")) {
+
+    return "Study time! 📚🐱 I'll sit beside you and supervise. No sleeping! 😼";
+  }
+
+  if (msg.includes("bye")) {
+
+    return "Aww, leaving already? 😿 Come back soon. I'll be here waiting! 🐾";
+  }
+
+  if (mood.includes("Sleepy")) {
+
+    return "Mrrr... 😴 I heard you, but my eyes are getting sleepy... zzz...";
+  }
+
+  if (mood.includes("Sassy")) {
+
+    return "Hmmph 😼 That's an interesting thing to say. My whiskers disagree.";
+  }
+
+  if (mood.includes("Loving")) {
+
+    return "Awww 😻 Come closer! *purr purr* ❤️🐾";
+  }
+
+  if (mood.includes("Grumpy")) {
+
+    return "Meow. 😾 I'm not impressed... but okay, I'll listen.";
+  }
+
+  const replies = [
+    "Meeeow! 🐱 Tell me more!",
+    "Hmm... my whiskers are thinking 🤔🐾",
+    "Interesting! 😺 I like talking with you.",
+    "Purrrr... ❤️ That sounds nice!",
+    "Meow meow! 🐾 What happens next?",
+    "I'm listening, human. 👀🐱"
+  ];
+
+  return replies[Math.floor(Math.random() * replies.length)];
+}
+
+function escapeHTML(text) {
+
+  const div = document.createElement("div");
+  div.textContent = text;
+
+  return div.innerHTML;
+}
+
+function scrollChat() {
+
+  const chat = document.getElementById("chat");
+
+  setTimeout(() => {
+    chat.scrollTop = chat.scrollHeight;
+  }, 50);
+}
+
+</script>
+
+</body>
+</html>
